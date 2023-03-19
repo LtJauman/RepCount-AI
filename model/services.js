@@ -51,7 +51,6 @@ class Result {
 			console.log("Image with Url: " + this.imageDir + " " +stringifiedResults)
 		}
 	}
-
 }
   
 
@@ -59,16 +58,9 @@ function preload() {
 	//p5 function - this function is automatically called by the p5 library, once only
 	loadJSON('http://localhost:3000/api/data', processResults);
 	classifier = ml5.imageClassifier(imageModelURL + 'model.json'); //load the model!
-	//console.log(imageDict);
-
-	  
-	  //console.log(arrayOfMappedResults)
 }
 
 function processResults(results){
-	console.log(results);
-	console.log(results[0].folderName);
-	console.log(results[0].files);
 	let folderName = results[0].folderName;
 	let imageList = results[0].files;
 	for (let i = 0; i <= imageList.length -1 ; i++) {
@@ -78,7 +70,6 @@ function processResults(results){
 		arrayOfMappedResults.push(mappedResult);
 	}
 }
-
 
 function setup() {
 	console.log(loadedImages);
@@ -104,7 +95,6 @@ function processresults(error, results) {
 }
 
 function draw() {
-	//console.log(friendlyresults())
 	//p5 function - this function is automatically called every frame
 	//background("#c0c0c0"); //set the canvas default back colour
 	//image(cam, 0, 0); //pass the video to the p5 canvas
