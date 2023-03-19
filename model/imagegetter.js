@@ -18,9 +18,6 @@ app.use((req, res, next) => {
 
 app.get('/api/data', (req, res) => {  
   const results = getFoldersAndImagesInDir('images');
-  const firstFolderPath = results[0].folderPath;
-  console.log(results)
-  console.log(firstFolderPath);
   res.send(results);
 });
 

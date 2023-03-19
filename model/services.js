@@ -4,7 +4,7 @@
 // Machine Learning & Teachable Machine Models
 
 //for easy lets setup some quick global variables
-var imageModelURL = 'https://teachablemachine.withgoogle.com/models/VUHqJPevq/'; //variable used to hold path to the model
+var imageModelURL = 'https://teachablemachine.withgoogle.com/models/iPqH_pPou/'; //variable used to hold path to the model
 // Image: https://teachablemachine.withgoogle.com/models/VUHqJPevq/
 // My pose model: https://teachablemachine.withgoogle.com/models/iPqH_pPou/
 var classifier; //variable used to hold the classifier object
@@ -22,7 +22,6 @@ class Result {
 	  this.folderName = folderName;
 	}
 	setArray(arr){
-		console.log(arr)
 		if (arr.length > 0){
 			this.result = arr;
 			for(let i = 0; i <= this.result.length -1 ; i++){
@@ -31,7 +30,6 @@ class Result {
 		}	
 	}
 	getHighestPercentageLabel(){
-		
 		if(this.result.length > 0){
 			let highestPer = this.result[0];
 			for(let i = 0; i <= this.result.length -1 ; i++){
@@ -61,6 +59,7 @@ function preload() {
 }
 
 function processResults(results){
+	count = 0;
 	let folderName = results[0].folderName;
 	let imageList = results[0].files;
 	for (let i = 0; i <= imageList.length -1 ; i++) {
@@ -72,7 +71,6 @@ function processResults(results){
 }
 
 function setup() {
-	console.log(loadedImages);
 	requestresults(loadedImages);
 	console.log(arrayOfMappedResults);
 }
@@ -90,7 +88,7 @@ function processresults(error, results) {
 	} else { //no errors detected, so lets grab the label and execute the classify function again
 		arrayOfMappedResults[count].setArray(results);
 		count++;
-		console.log("count is now: ", count);
+		//console.log("count is now: ", count);
 	}
 }
 
