@@ -1,27 +1,144 @@
-const TeachableMachine = require("@sashido/teachablemachine-node");
+const fs = require('fs');
+const express = require('express');
+const app = express();
+const port = 3000;
 
-const model = new TeachableMachine({
-  modelUrl: "https://teachablemachine.withgoogle.com/models/r6BBk-hiN/"
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+app.use((req, res, next) => {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', 'http://127.0.0.1:5500');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // Pass to next layer of middleware
+  next();
 });
 
-const fs = require('fs');
-const path = require('path');
+app.get('/api/data', (req, res) => {  
+  const results = getFoldersAndImagesInDir('images');
+  const firstFolderPath = results[0].folderPath;
+  console.log(results)
+  console.log(firstFolderPath);
+  res.send(results);
+});
 
-function getImagesByFolderDir(folderDir) {
-  const folderPath = path.join(__dirname, folderDir);
-  const images = [];
+app.listen(port, () => {
+  console.log(`Server listening at http://localhost:${port}`);
+});
 
-  fs.readdirSync(folderPath).forEach(file => {
-    images.push(file);
+// function getFoldersAndImagesInDir(parentDir) {
+//   const folderPaths = getFoldersInDir(parentDir);
+
+//   const folderData = folderPaths.map(folderPath => {
+//     const folderName = folderPath.split('/').pop();
+//     const imagePaths = getImagesByFolderDir(`${parentDir}/${folderName}`);
+
+//     const formattedImagePaths = imagePaths.map(imagePath => `${parentDir}/${folderName}/${imagePath}`);
+
+//     return {
+//       folderPath: `${parentDir}/${folderName}`,
+//       files: formattedImagePaths
+//     };
+//   });
+
+//   return folderData;
+// }
+
+function getFoldersAndImagesInDir(parentDir) {
+  const folderPaths = getFoldersInDir(parentDir);
+
+  const folderData = folderPaths.map(folderPath => {
+    const folderName = folderPath.split('/').pop();
+    const imagePaths = getImagesByFolderDir(`${parentDir}/${folderName}`);
+
+    const formattedImagePaths = imagePaths.map(imagePath => `${parentDir}/${folderName}/${imagePath}`);
+
+    return {
+      folderName: `${folderName}`,
+      files: formattedImagePaths
+    };
   });
 
-  return images;
+  return folderData;
 }
 
-// Example usage:
-const images = getImagesByFolderDir('B');
-console.log(images); // array of image file names in the "all_pictures" directory
+
+function getFoldersInDir(parentDir) {
+  const directoryPath = `${__dirname}/${parentDir}`;
+  const files = fs.readdirSync(directoryPath);
+
+  const folderNames = files.filter(file => {
+    const filePath = `${directoryPath}/${file}`;
+    return fs.statSync(filePath).isDirectory();
+  }).map(folder => `${parentDir}/${folder}`);
+
+  return folderNames;
+}
+
+function getImagesByFolderDir(folderDir) {
+  const directoryPath = `${__dirname}/${folderDir}`;
+  const files = fs.readdirSync(directoryPath);
+
+  const pngFiles = files.filter(file => file.endsWith('.png'));
+
+  return pngFiles;
+}
+
+// const images = getImagesByFolderDir('B');
+// console.log(images); 
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// function getImagesByFolderDir(folderDir) {
+//   const directoryPath = `${__dirname}/${folderDir}`;
+//   const files = fs.readdirSync(directoryPath);
+
+//   const fileNamesWithPath = files.map(file => `${directoryPath}/${file}`);
+
+//   const pngFiles = fileNamesWithPath.filter(file => file.endsWith('.png'));
+
+//   return pngFiles;
+// }
+
+// function getFoldersInDir(parentDir) {
+//   const directoryPath = `${__dirname}/${parentDir}`;
+//   const files = fs.readdirSync(directoryPath);
+
+//   const folderNames = files.filter(file => {
+//     const filePath = `${directoryPath}/${file}`;
+//     return fs.statSync(filePath).isDirectory();
+//   });
+
+//   return folderNames;
+// }
+
+// function getFoldersInDir(parentDir) {
+//   const directoryPath = `${__dirname}/${parentDir}`;
+//   const files = fs.readdirSync(directoryPath);
+
+//   const folderNames = files.filter(file => {
+//     const filePath = `${directoryPath}/${file}`;
+//     return fs.statSync(filePath).isDirectory();
+//   }).map(folder => `${parentDir}/${folder}`);
+
+//   return folderNames;
+// }
