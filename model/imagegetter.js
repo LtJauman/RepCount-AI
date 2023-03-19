@@ -28,24 +28,6 @@ app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
 });
 
-// function getFoldersAndImagesInDir(parentDir) {
-//   const folderPaths = getFoldersInDir(parentDir);
-
-//   const folderData = folderPaths.map(folderPath => {
-//     const folderName = folderPath.split('/').pop();
-//     const imagePaths = getImagesByFolderDir(`${parentDir}/${folderName}`);
-
-//     const formattedImagePaths = imagePaths.map(imagePath => `${parentDir}/${folderName}/${imagePath}`);
-
-//     return {
-//       folderPath: `${parentDir}/${folderName}`,
-//       files: formattedImagePaths
-//     };
-//   });
-
-//   return folderData;
-// }
-
 function getFoldersAndImagesInDir(parentDir) {
   const folderPaths = getFoldersInDir(parentDir);
 
@@ -84,61 +66,4 @@ function getImagesByFolderDir(folderDir) {
   const pngFiles = files.filter(file => file.endsWith('.png'));
 
   return pngFiles;
-}
-
-// const images = getImagesByFolderDir('B');
-// console.log(images); 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// function getImagesByFolderDir(folderDir) {
-//   const directoryPath = `${__dirname}/${folderDir}`;
-//   const files = fs.readdirSync(directoryPath);
-
-//   const fileNamesWithPath = files.map(file => `${directoryPath}/${file}`);
-
-//   const pngFiles = fileNamesWithPath.filter(file => file.endsWith('.png'));
-
-//   return pngFiles;
-// }
-
-// function getFoldersInDir(parentDir) {
-//   const directoryPath = `${__dirname}/${parentDir}`;
-//   const files = fs.readdirSync(directoryPath);
-
-//   const folderNames = files.filter(file => {
-//     const filePath = `${directoryPath}/${file}`;
-//     return fs.statSync(filePath).isDirectory();
-//   });
-
-//   return folderNames;
-// }
-
-// function getFoldersInDir(parentDir) {
-//   const directoryPath = `${__dirname}/${parentDir}`;
-//   const files = fs.readdirSync(directoryPath);
-
-//   const folderNames = files.filter(file => {
-//     const filePath = `${directoryPath}/${file}`;
-//     return fs.statSync(filePath).isDirectory();
-//   }).map(folder => `${parentDir}/${folder}`);
-
-//   return folderNames;
-// }
+} 
