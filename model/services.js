@@ -4,7 +4,7 @@
 // Machine Learning & Teachable Machine Models
 
 //for easy lets setup some quick global variables
-var imageModelURL = 'https://teachablemachine.withgoogle.com/models/iPqH_pPou/'; //variable used to hold path to the model
+var imageModelURL = 'https://teachablemachine.withgoogle.com/models/VUHqJPevq/'; //variable used to hold path to the model
 // Image: https://teachablemachine.withgoogle.com/models/VUHqJPevq/
 // My pose model: https://teachablemachine.withgoogle.com/models/iPqH_pPou/
 var classifier; //variable used to hold the classifier object
@@ -30,6 +30,7 @@ class Result {
 		}	
 	}
 	getHighestPercentageLabel(){
+		
 		if(this.result.length > 0){
 			let highestPer = this.result[0];
 			for(let i = 0; i <= this.result.length -1 ; i++){
