@@ -1,25 +1,20 @@
 "use strict";
-const modelURL = 'https://teachablemachine.withgoogle.com/models/iPqH_pPou/';
+const modelURL = 'https://teachablemachine.withgoogle.com/models/n4M0b3quT/';
+
 // the json file (model topology) has a reference to the bin file (model weights)
 const checkpointURL = modelURL + "model.json";
 // the metatadata json file contains the text labels of your model and additional information
 const metadataURL = modelURL + "metadata.json";
 
-// const modelURL = 'https://teachablemachine.withgoogle.com/models/iPqH_pPou/'; -> First Up, Middle, Down model
-
-
-
+// REPS1 mini 'https://teachablemachine.withgoogle.com/models/iPqH_pPou/'
+// REPS 1 'https://teachablemachine.withgoogle.com/models/n4M0b3quT/'
 
 let model;
 let totalClasses;
-let myCanvas;
 
-let classification = "None Yet";
-let probability = "100";
-let poser;
-let video;
 
 let arrayOfMappedResults = [];
+let arrayOfFrameResults = [];
 
 class PoseResult {
 	constructor(imageDir, folderName, poses, posenetOutput) {
@@ -68,6 +63,17 @@ class PoseResult {
 	}
 }
 
+const States = Object.freeze({
+	BOTTOM: 'bottom',
+	MIDDLE: 'middle',
+	TOP: 'top'
+  });
+
+  const TransitionStates = Object.freeze({
+	UP: 'up',
+	DOWN: 'down'
+  });
+
 async function setup() {
 	await load();
 }
@@ -76,7 +82,8 @@ async function load() {
 	model = await tmPose.load(checkpointURL, metadataURL);
 	totalClasses = model.getTotalClasses();
 	console.log("Number of classes, ", totalClasses);
-	loadJSON('http://localhost:3000/api/data', processResults);
+	//loadJSON('http://localhost:3000/api/testdata', processResults);
+	loadJSON('http://localhost:3000/api/video', processVideo);
 }
 
 async function processResults(results){
@@ -132,7 +139,46 @@ async function processResults(results){
 	printConfusionMatrix(arrayOfMappedResults);
 }
 
+async function processVideo(videoFrames){
+	let promises = [];
+	for (let i = 0; i <= videoFrames.length -1 ; i++) {
+		const img = new Image();
+		img.src = videoFrames[i];
+		let promise = new Promise(async (resolve) => {
+			img.onload = async () => {
+			// Pose estimation
+			const { pose, posenetOutput } = await model.estimatePose(img, true, 32, 1, 0.5, 20);
+			// My model estimation
+			let prediction = await predict(posenetOutput);
+			// Push results to array of objects
+			arrayOfFrameResults.push({imageName: videoFrames[i], result: prediction });
+			resolve();
+		};});
+		promises.push(promise)
+	}	
+	// Once all frames have been estimated 
+	await Promise.all(promises);
+	// Sort the array in image order (due to the async nature of the app the frames are not ordered)
+	let sortedArray = sortArrayByImgName(arrayOfFrameResults);
+	// Print the predictions for each frame (e.g. frameimgname + top/bottom/middle predictions)
+	printVideoResultsTable(sortedArray);
+	// Count repetitions 
+	countReps(sortedArray);
+}
+
+function printVideoResultsTable(arr){
+	const tableData = arr.map((obj) => ({
+		imageName: obj.imageName,
+		Bottom: obj.result[0].probability,
+		Middle: obj.result[1].probability,
+		Top: obj.result[2].probability,
+	  }));
+	  
+	  console.table(tableData);
+}
+
 async function predict(posenetOutput, flipHorizontal = false){
+	// Feeds frame to my model and returns a prediction
 	const prediction = await model.predict(
 		posenetOutput,
 		flipHorizontal,
@@ -141,56 +187,28 @@ async function predict(posenetOutput, flipHorizontal = false){
 	return prediction;
 };
 
-function calculateSuccessRate() {
-	let successRates = {};
-	
-	for (let i = 0; i < arrayOfMappedResults.length; i++) {
-	  let folderName = arrayOfMappedResults[i].folderName;
-	  let testResult = arrayOfMappedResults[i].testResult;
-  
-	  if (successRates[folderName]) {
-		successRates[folderName].total += 1;
-		if (testResult === "successful") {
-		  successRates[folderName].success += 1;
-		}
-	  } else {
-		successRates[folderName] = {
-		  total: 1,
-		  success: testResult === "successful" ? 1 : 0,
-		};
-	  }
-	}
-  
-	for (let folder in successRates) {
-	  let successRate = successRates[folder].success / successRates[folder].total;
-	  let successRatePercentage = successRate * 100;
-	  console.log(`Success rate for folder ${folder}: ${successRatePercentage}%`);
-	}
-  }
-
-
 function printConfusionMatrix(arr){
 	// create an object to store the confusion matrix
 	const confusionMatrix = {};
 
 	// iterate over each object in the array
 	for (const obj of arr) {
-	// get the expected label
-	const expectedLabel = obj.folderName;
+		// get the expected label
+		const expectedLabel = obj.folderName;
 
-	// get the guessed label (i.e., the label with the highest percentage)
-	const guessedLabel = obj.getHighestPercentageLabel();
+		// get the guessed label (i.e., the label with the highest percentage)
+		const guessedLabel = obj.getHighestPercentageLabel();
 
-	// update the confusion matrix
-	if (!confusionMatrix[expectedLabel]) {
-		confusionMatrix[expectedLabel] = {};
-	}
+		// update the confusion matrix
+		if (!confusionMatrix[expectedLabel]) {
+			confusionMatrix[expectedLabel] = {};
+		}
 
-	if (!confusionMatrix[expectedLabel][guessedLabel]) {
-		confusionMatrix[expectedLabel][guessedLabel] = 1;
-	} else {
-		confusionMatrix[expectedLabel][guessedLabel]++;
-	}
+		if (!confusionMatrix[expectedLabel][guessedLabel]) {
+			confusionMatrix[expectedLabel][guessedLabel] = 1;
+		} else {
+			confusionMatrix[expectedLabel][guessedLabel]++;
+		}
 	}
 
 	// print the confusion matrix
@@ -216,39 +234,23 @@ function printConfusionMatrix(arr){
 	const folderNames = [...new Set(arr.map(obj => obj.folderName))];
 	for (const folderName of folderNames) {
 		console.log(folderName)
-		const confusionMatrix = generateConfusionMatrixPerClass2(folderName);
-	  
-		// // print the confusion matrix for the current folder
-		// console.log(`Confusion matrix for folder "${folderName}":`);
-		// console.log("");
-	  
-		// // print the header row
-		// console.log("\t" + Object.keys(confusionMatrix[folderName]).join("\t"));
-		
-		// // print the data rows
-		// for (const label in confusionMatrix) {
-		//   console.log(`${label}\t${Object.values(confusionMatrix[label]).join("\t")}`);
-		// }
-	  
-		// console.log("");
-	  }
+		const confusionMatrix = generateConfusionMatrixPerClass(folderName);
+	}
 }
 
-function generateConfusionMatrixPerClass2(folderName) {
-	// create an object to store the confusion matrix for the current folder
+function generateConfusionMatrixPerClass(folderName) {
+	// object to store the confusion matrix for the current folder
 	const confusionMatrix = {
 	  [folderName]: { [folderName]: 0, ["not " + folderName]: 0 },
 	  ["not " + folderName]: { [folderName]: 0, ["not " + folderName]: 0 }
 	};
   
-	// iterate over each object in the array
 	let truePositives = 0;
 	let trueNegatives = 0;
 	let falsePositives = 0;
 	let falseNegatives = 0;
   
 	for (const obj of arrayOfMappedResults) {
-	  // get the expected and guessed labels
 	  const expectedLabel = obj.folderName;
 	  const guessedLabel = obj.getHighestPercentageLabel();
   
@@ -279,7 +281,6 @@ function generateConfusionMatrixPerClass2(folderName) {
 	const positivePrecision = (truePositives / (truePositives + falsePositives)) * 100;
 	const negativePrecision = (trueNegatives / (trueNegatives + falseNegatives)) * 100;
   
-	// log the confusion matrix and performance metrics for the current folder
 	console.log(`Confusion Matrix for ${folderName}:`);
 	console.table(confusionMatrix);
 	console.log(`Accuracy: ${accuracy.toFixed(2)}%`);
@@ -288,7 +289,70 @@ function generateConfusionMatrixPerClass2(folderName) {
 	console.log(`Positive Precision: ${positivePrecision.toFixed(2)}%`);
 	console.log(`Negative Precision: ${negativePrecision.toFixed(2)}%`);
   
-	// return the confusion matrix for the current folder
 	return confusionMatrix;
+}
+
+function countReps(arr){
+	  let currentState = States.BOTTOM;
+	  let repCount = 0;
+	  let transitioningUpCount = 0;
+
+	  for (let i = 0; i < arr.length; i++) {
+		const bottomProb = arr[i].result[0].probability;
+		const middleProb = arr[i].result[1].probability;
+		const topProb = arr[i].result[2].probability;
+
+		switch(currentState){
+			case States.BOTTOM:
+				if(topProb > 0.7 || bottomProb > 0.7){
+					// Unlikely that when in bottom we will automatically get a top probability so probably an error
+					// If already in bottom then maintain
+					continue;
+				}
+				if(bottomProb < 0.7) {
+					// if the bottom prob is less than 70%, it must be a high middle probability, change state
+					currentState = States.MIDDLE
+				}
+				break;
+			case States.MIDDLE:
+				if(middleProb > 0.7){
+					// Reset transitioning up, a middle was detected
+					transitioningUpCount = 0; 
+					// Still a middle probability
+				}
+				if(bottomProb > 0.7){
+					transitioningUpCount = 0; 
+					// Prepare for a transition towards bottom. We need code here to wait to confirm that we are indeed going bottom
+				}
+				if(topProb > 0.7){
+					transitioningUpCount ++; 
+					if(transitioningUpCount >= 2) {
+						transitioningUpCount = 0; 
+						currentState = States.TOP;
+					}
+					// Prepare for a transition towards up. We need code here to wait to confirm that we are indeed going up
+				}
+				break;
+			case States.TOP:
+				if(topProb > 0.7 || bottomProb > 0.7){
+					continue; 
+				}
+				if(middleProb > 0.7){
+					repCount++;
+					currentState = States.MIDDLE;
+				}
+
+				break;
+		}
+	  }
+	  console.log('Number of pull-up reps:', repCount);
+}
+
+function sortArrayByImgName(arrayOfFrameResults) {
+	return arrayOfFrameResults.sort((obj1, obj2) => {
+	  const num1 = parseInt(obj1.imageName.match(/\d+\.png$/)[0].slice(0, -4)); // extract the number from the imageName of obj1
+	  const num2 = parseInt(obj2.imageName.match(/\d+\.png$/)[0].slice(0, -4)); // extract the number from the imageName of obj2
+	  return num1 - num2; // sort by ascending order of the numbers
+	});
   }
   

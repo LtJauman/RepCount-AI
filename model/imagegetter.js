@@ -18,8 +18,13 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get('/api/data', (req, res) => {  
+app.get('/api/testdata', (req, res) => {  
   const results = getFoldersAndImagesInDir('images');
+  res.send(results);
+});
+
+app.get('/api/video', (req, res) => {  
+  const results = getImagesByFolderDir2('video');
   res.send(results);
 });
 
@@ -66,3 +71,12 @@ function getImagesByFolderDir(folderDir) {
 
   return pngFiles;
 } 
+
+function getImagesByFolderDir2(folderDir) {
+  const directoryPath = `${__dirname}/${folderDir}`;
+  const files = fs.readdirSync(directoryPath);
+
+  const pngFiles = files.filter(file => file.endsWith('.png')).map(file => `${folderDir}/${file}`);
+
+  return pngFiles;
+}

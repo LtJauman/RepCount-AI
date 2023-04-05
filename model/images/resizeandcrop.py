@@ -25,4 +25,4 @@ def resize_images(directory):
             resize_images(filepath)
 
 # Call the function to resize and crop images in the current directory and its subdirectories
-resize_images('C:\\Users\\User\\Documents\\GitHub\\RepCount-AI\\model\\video')
+resize_images('C:\\Users\\User\\Documents\\GitHub\\RepCount-AI\\model\\images')
